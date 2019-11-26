@@ -4,6 +4,16 @@ metadata:
   generateName: artifact-passing-
 spec:
   entrypoint: artifact-example
+  volumeClaimTemplates:                   # define pvc
+  - metadata:
+      name: shareddir
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 1280Ki
+        limits:
+          storage: 1280Ki
   templates:
   - name: artifact-example
     steps:
@@ -19,7 +29,7 @@ spec:
       args:
         - mc --config-dir /tmp/mc config host add input $INPUT_URL $INPUT_ACCESS_KEY_ID $INPUT_SECRET_ACCESS_KEY;
           mc --config-dir /tmp/mc config host add output $OUTPUT_URL $OUTPUT_ACCESS_KEY_ID $OUTPUT_SECRET_ACCESS_KEY;
-          mc --config-dir /tmp/mc mirror --overwrite input/$INPUT_PATH output/$OUTPUT_PATH > /tmp/mc_log.txt;
+          mc --config-dir /tmp/mc mirror --overwrite input/$INPUT_PATH output/$OUTPUT_PATH > /mnt/vol/mc_log.txt;
       resources:
         limits:
           cpu: 500m
@@ -81,17 +91,15 @@ spec:
           mountPath: "/usr/local/share/eggres_in"
         - name: s3-sync-secret-eggress-out
           mountPath: "/usr/local/share/eggres_out"
-    outputs:
-      parameters:
-      # export a global parameter. The parameter will be programatically available in the completed
-      # workflow object under: workflow.outputs.parameters
-      - name: mc-log
-        valueFrom:
-          path: /tmp/mc_log.txt
-        globalName: mc-log-global
+        - name: shareddir
+          mountPath: /mnt/vol
+
 
   - name: json-to-parquet
     container:
       image: alpine:latest
       command: [sh, -c]
-      args: ["echo {{workflow.outputs.parameters.mc-log-global}}"]
+      args: ["cat /mnt/vol/mc_log.txt"]
+      volumeMounts:
+      - name: shareddir
+        mountPath: /mnt/vol
