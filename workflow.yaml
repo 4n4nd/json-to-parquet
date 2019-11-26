@@ -14,6 +14,14 @@ spec:
           storage: 1280Ki
         limits:
           storage: 1280Ki
+  volumes:
+  - name: s3-sync-secret-eggress-in
+    secret:
+      secretName: s3-sync-secret-eggress-in
+  - name: s3-sync-secret-eggress-out
+    secret:
+      secretName: s3-sync-secret-eggress-out
+
   templates:
   - name: artifact-example
     steps:
